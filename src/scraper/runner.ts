@@ -2,6 +2,7 @@ import { chromium } from "playwright";
 import { db } from "../lib/db";
 import { WILLYS_CATEGORY_URLS, scrapeCategoryPage } from "./chains/willys";
 import { scrapeIcaStoreOffers } from "./chains/ica";
+import { scrapeCoopOffers } from "./chains/coop";
 import type { ScrapedItem } from "./types";
 import { delayFor, isWithinAllowedWindow, sleep } from "./politeness";
 
@@ -160,8 +161,47 @@ async function runIca() {
   console.log(`ICA: klart. ${totalMatched} matchade varor, ${totalUnmatched} omatchade.`);
 }
 
+async function runCoop() {
+  if (!isWithinAllowedWindow("COOP")) {
+    console.log("COOP: utanför tillåtet tidsfönster, hoppar över.");
+    return;
+  }
+
+  const stores = await db.store.findMany({
+    where: { chain: "COOP", isEnabled: true },
+  });
+  if (stores.length === 0) {
+    console.log("COOP: inga aktiva butiker att scrapa, hoppar över.");
+    return;
+  }
+  const storeIds = stores.map((s) => s.id);
+
+  console.log("COOP: scrapar aktuella erbjudanden...");
+  const browser = await chromium.launch();
+  const page = await browser.newPage({ userAgent: USER_AGENT });
+
+  let items: ScrapedItem[] = [];
+  try {
+    items = await scrapeCoopOffers(page);
+    console.log(`  -> ${items.length} varor`);
+  } catch (error) {
+    console.error("  Misslyckades att scrapa Coop:", error);
+  }
+
+  await browser.close();
+
+  const { matched, unmatched } = await saveScrapedItems("COOP", storeIds, items);
+  await db.store.updateMany({
+    where: { id: { in: storeIds } },
+    data: { lastScrapedAt: new Date() },
+  });
+
+  console.log(`COOP: klart. ${matched} matchade varor, ${unmatched} omatchade.`);
+}
+
 export async function runScraper() {
   await runWillys();
   await runIca();
-  // COOP, LIDL läggs till i kommande steg.
+  await runCoop();
+  // LIDL läggs till i kommande steg.
 }
