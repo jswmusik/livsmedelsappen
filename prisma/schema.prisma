@@ -14,11 +14,13 @@ model Household {
   name      String
   createdAt DateTime @default(now())
 
-  users         User[]
-  products      Product[]
-  shoppingLists ShoppingList[]
-  recipes       Recipe[]
-  purchases     Purchase[]
+  users                User[]
+  products             Product[]
+  shoppingLists        ShoppingList[]
+  recipes              Recipe[]
+  purchases            Purchase[]
+  stores               Store[]
+  unmatchedScrapeItems UnmatchedScrapeItem[]
 }
 
 model User {
@@ -47,6 +49,8 @@ model Product {
   shoppingListItems ShoppingListItem[]
   recipeIngredients RecipeIngredient[]
   purchaseItems     PurchaseItem[]
+  priceObservations PriceObservation[]
+  productMappings   ProductMapping[]
 
   @@unique([householdId, name, brand])
 }
@@ -122,4 +126,63 @@ model PurchaseItem {
   quantity   Float
   unitPrice  Float
   totalPrice Float
+}
+
+model Store {
+  id            String    @id @default(cuid())
+  householdId   String
+  household     Household @relation(fields: [householdId], references: [id])
+  chain         String
+  name          String
+  url           String
+  isEnabled     Boolean   @default(true)
+  lastScrapedAt DateTime?
+  createdAt     DateTime  @default(now())
+
+  priceObservations PriceObservation[]
+
+  @@unique([householdId, url])
+}
+
+model PriceObservation {
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  storeId      String
+  store        Store    @relation(fields: [storeId], references: [id])
+  regularPrice Float
+  memberPrice  Float?
+  unit         String
+  scrapedAt    DateTime @default(now())
+
+  @@index([productId, storeId, scrapedAt])
+}
+
+// Kopplar en kedjas interna produkt-id (stabilt per kedja, oavsett butik)
+// till vår egen Product.
+model ProductMapping {
+  id                 String   @id @default(cuid())
+  productId          String
+  product            Product  @relation(fields: [productId], references: [id])
+  chain              String
+  externalProductKey String
+  externalName       String
+  createdAt          DateTime @default(now())
+
+  @@unique([chain, externalProductKey])
+}
+
+// Scrapade varor utan matchning ännu - väntar på manuell länkning.
+model UnmatchedScrapeItem {
+  id                 String    @id @default(cuid())
+  householdId        String
+  household          Household @relation(fields: [householdId], references: [id])
+  chain              String
+  externalProductKey String
+  externalName       String
+  lastSeenPrice      Float
+  lastSeenAt         DateTime
+  resolvedAt         DateTime?
+
+  @@unique([householdId, chain, externalProductKey])
 }

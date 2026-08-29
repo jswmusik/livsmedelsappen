@@ -30,7 +30,15 @@ export default async function AppLayout({
             {session.displayName}
           </span>
         </p>
-        <LogoutButton />
+        <div className="flex items-center gap-4">
+          <Link
+            href="/settings/stores"
+            className="text-sm font-medium text-gray-500 hover:text-gray-900"
+          >
+            Inställningar
+          </Link>
+          <LogoutButton />
+        </div>
       </header>
 
       <main className="flex-1 pb-20">{children}</main>
