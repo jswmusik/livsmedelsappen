@@ -18,6 +18,7 @@ model Household {
   products      Product[]
   shoppingLists ShoppingList[]
   recipes       Recipe[]
+  purchases     Purchase[]
 }
 
 model User {
@@ -28,6 +29,8 @@ model User {
   passwordHash String
   displayName  String
   createdAt    DateTime  @default(now())
+
+  purchases Purchase[]
 }
 
 model Product {
@@ -43,6 +46,7 @@ model Product {
 
   shoppingListItems ShoppingListItem[]
   recipeIngredients RecipeIngredient[]
+  purchaseItems     PurchaseItem[]
 
   @@unique([householdId, name, brand])
 }
@@ -93,4 +97,29 @@ model ShoppingListItem {
   isChecked      Boolean      @default(false)
   addedBy        String?
   createdAt      DateTime     @default(now())
+}
+
+// Ett köptillfälle / kvitto
+model Purchase {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id])
+  purchasedBy String
+  user        User      @relation(fields: [purchasedBy], references: [id])
+  storeName   String
+  purchasedAt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+
+  items PurchaseItem[]
+}
+
+model PurchaseItem {
+  id         String   @id @default(cuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id])
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Float
+  unitPrice  Float
+  totalPrice Float
 }
