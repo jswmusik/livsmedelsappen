@@ -17,6 +17,7 @@ model Household {
   users         User[]
   products      Product[]
   shoppingLists ShoppingList[]
+  recipes       Recipe[]
 }
 
 model User {
@@ -41,8 +42,34 @@ model Product {
   archivedAt  DateTime?
 
   shoppingListItems ShoppingListItem[]
+  recipeIngredients RecipeIngredient[]
 
   @@unique([householdId, name, brand])
+}
+
+model Recipe {
+  id           String    @id @default(cuid())
+  householdId  String
+  household    Household @relation(fields: [householdId], references: [id])
+  name         String
+  instructions String?   @db.Text
+  servings     Int       @default(2)
+  createdAt    DateTime  @default(now())
+  archivedAt   DateTime?
+
+  ingredients RecipeIngredient[]
+}
+
+model RecipeIngredient {
+  id        String  @id @default(cuid())
+  recipeId  String
+  recipe    Recipe  @relation(fields: [recipeId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Float
+  unit      String
+
+  @@unique([recipeId, productId])
 }
 
 model ShoppingList {
