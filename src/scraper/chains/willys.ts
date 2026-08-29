@@ -1,12 +1,7 @@
 import type { Page } from "playwright";
+import type { ScrapedItem } from "../types";
 
-export interface ScrapedItem {
-  externalProductKey: string;
-  name: string;
-  regularPrice: number;
-  memberPrice: number | null;
-  unit: string;
-}
+export type { ScrapedItem };
 
 // Willys visar priser för hela sortimentet nationellt (bekräftat manuellt) -
 // ingen butiksväxling behövs för att se pris, till skillnad från ICA.

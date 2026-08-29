@@ -1,6 +1,8 @@
 import { chromium } from "playwright";
 import { db } from "../lib/db";
-import { WILLYS_CATEGORY_URLS, scrapeCategoryPage, type ScrapedItem } from "./chains/willys";
+import { WILLYS_CATEGORY_URLS, scrapeCategoryPage } from "./chains/willys";
+import { scrapeIcaStoreOffers } from "./chains/ica";
+import type { ScrapedItem } from "./types";
 import { delayFor, isWithinAllowedWindow, sleep } from "./politeness";
 
 const USER_AGENT =
@@ -115,7 +117,51 @@ async function runWillys() {
   console.log(`WILLYS: klart. ${matched} matchade varor, ${unmatched} omatchade.`);
 }
 
+async function runIca() {
+  if (!isWithinAllowedWindow("ICA")) {
+    console.log("ICA: utanför tillåtet tidsfönster, hoppar över.");
+    return;
+  }
+
+  const stores = await db.store.findMany({
+    where: { chain: "ICA", isEnabled: true },
+  });
+  if (stores.length === 0) {
+    console.log("ICA: inga aktiva butiker att scrapa, hoppar över.");
+    return;
+  }
+
+  console.log(`ICA: scrapar ${stores.length} butik(er)...`);
+  const browser = await chromium.launch();
+  const page = await browser.newPage({ userAgent: USER_AGENT });
+
+  let totalMatched = 0;
+  let totalUnmatched = 0;
+
+  for (let i = 0; i < stores.length; i++) {
+    if (i > 0) await sleep(delayFor("ICA"));
+    const store = stores[i];
+    try {
+      const items = await scrapeIcaStoreOffers(page, store.url);
+      console.log(`  ${store.name} -> ${items.length} erbjudanden`);
+      const { matched, unmatched } = await saveScrapedItems("ICA", [store.id], items);
+      totalMatched += matched;
+      totalUnmatched += unmatched;
+      await db.store.update({
+        where: { id: store.id },
+        data: { lastScrapedAt: new Date() },
+      });
+    } catch (error) {
+      console.error(`  Misslyckades att scrapa ${store.name}:`, error);
+    }
+  }
+
+  await browser.close();
+  console.log(`ICA: klart. ${totalMatched} matchade varor, ${totalUnmatched} omatchade.`);
+}
+
 export async function runScraper() {
   await runWillys();
-  // ICA, COOP, LIDL läggs till i kommande steg (2D).
+  await runIca();
+  // COOP, LIDL läggs till i kommande steg.
 }
