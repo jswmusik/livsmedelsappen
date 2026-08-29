@@ -2,9 +2,11 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import type { Product } from "@/components/ProductPicker";
+import { BestPriceBadge, type PriceInfo } from "@/components/BestPriceBadge";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [prices, setPrices] = useState<Record<string, PriceInfo>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
@@ -13,6 +15,9 @@ export default function ProductsPage() {
 
   useEffect(() => {
     fetchProducts();
+    fetch("/api/products/prices")
+      .then((r) => (r.ok ? r.json() : {}))
+      .then(setPrices);
   }, []);
 
   async function fetchProducts() {
@@ -128,6 +133,7 @@ export default function ProductsPage() {
                   {product.defaultUnit}
                   {product.category ? ` · ${product.category}` : ""}
                 </p>
+                <BestPriceBadge info={prices[product.id]} />
               </div>
               <button
                 onClick={() => archiveProduct(product)}

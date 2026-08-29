@@ -32,7 +32,7 @@ export default async function AppLayout({
         </p>
         <div className="flex items-center gap-4">
           <Link
-            href="/settings/stores"
+            href="/settings"
             className="text-sm font-medium text-gray-500 hover:text-gray-900"
           >
             Inställningar

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ProductPicker, type Product } from "@/components/ProductPicker";
+import { BestPriceBadge, type PriceInfo } from "@/components/BestPriceBadge";
 
 interface ShoppingListItem {
   id: string;
@@ -18,10 +19,14 @@ interface ShoppingList {
 
 export default function ListsPage() {
   const [list, setList] = useState<ShoppingList | null>(null);
+  const [prices, setPrices] = useState<Record<string, PriceInfo>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchList();
+    fetch("/api/products/prices")
+      .then((r) => (r.ok ? r.json() : {}))
+      .then(setPrices);
   }, []);
 
   async function fetchList() {
@@ -122,6 +127,7 @@ export default function ListsPage() {
           <ShoppingListRow
             key={item.id}
             item={item}
+            priceInfo={prices[item.product.id]}
             onToggle={() => toggleChecked(item)}
             onQuantityChange={(q) => updateQuantity(item, q)}
             onRemove={() => removeItem(item)}
@@ -159,11 +165,13 @@ export default function ListsPage() {
 
 function ShoppingListRow({
   item,
+  priceInfo,
   onToggle,
   onQuantityChange,
   onRemove,
 }: {
   item: ShoppingListItem;
+  priceInfo?: PriceInfo;
   onToggle: () => void;
   onQuantityChange: (quantity: number) => void;
   onRemove: () => void;
@@ -177,8 +185,11 @@ function ShoppingListRow({
         className="h-5 w-5 shrink-0"
       />
       <div className={`flex-1 ${item.isChecked ? "text-gray-400 line-through" : "text-gray-900"}`}>
-        {item.product.name}
-        {item.product.brand ? ` (${item.product.brand})` : ""}
+        <div>
+          {item.product.name}
+          {item.product.brand ? ` (${item.product.brand})` : ""}
+        </div>
+        {!item.isChecked && <BestPriceBadge info={priceInfo} />}
       </div>
       <input
         type="number"
