@@ -13,6 +13,9 @@ import {
 
 interface Summary {
   currentMonthTotal: number;
+  currentMonthSavings: number;
+  totalSavings: number;
+  hasPriceData: boolean;
   monthlySpend: { month: string; total: number }[];
   spendByStore: { storeName: string; total: number }[];
   spendByCategory: { category: string; total: number }[];
@@ -55,11 +58,19 @@ export default function DashboardPage() {
     <div className="px-4 py-6">
       <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
-        <p className="text-sm text-gray-500">Denna månad</p>
-        <p className="text-3xl font-semibold text-gray-900">
-          {summary.currentMonthTotal.toFixed(0)} kr
-        </p>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <p className="text-sm text-gray-500">Denna månad</p>
+          <p className="text-3xl font-semibold text-gray-900">
+            {summary.currentMonthTotal.toFixed(0)} kr
+          </p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <p className="text-sm text-gray-500">Sparat denna månad</p>
+          <p className="text-3xl font-semibold text-green-700">
+            {summary.currentMonthSavings.toFixed(0)} kr
+          </p>
+        </div>
       </div>
 
       <div className="mt-6">
@@ -127,10 +138,17 @@ export default function DashboardPage() {
         </ul>
       </div>
 
-      <p className="mt-6 text-xs text-gray-400">
-        Besparingsjämförelse mot butikspriser kommer när prisbevakningen
-        (Fas 2) är på plats.
-      </p>
+      {summary.hasPriceData ? (
+        <p className="mt-6 text-xs text-gray-400">
+          Totalt sparat senaste 6 månaderna: {summary.totalSavings.toFixed(0)} kr,
+          jämfört med ordinarie pris vid köptillfället.
+        </p>
+      ) : (
+        <p className="mt-6 text-xs text-gray-400">
+          Besparingssiffran fylls i allteftersom era köpta varor har ett
+          bevakat pris (se Inställningar → Ohanterade varor).
+        </p>
+      )}
     </div>
   );
 }
